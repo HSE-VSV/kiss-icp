@@ -84,6 +84,14 @@ PYBIND11_MODULE(kiss_icp_pybind, m) {
                 Sophus::SE3d motion(relative_motion);
                 return self.Preprocess(points, timestamps, motion);
             },
+            "points"_a, "timestamps"_a, "relative_motion"_a)
+        .def(
+            "_preprocess_with_indices",
+            [](Preprocessor &self, const std::vector<Eigen::Vector3d> &points,
+               const std::vector<double> &timestamps, const Eigen::Matrix4d &relative_motion) {
+                Sophus::SE3d motion(relative_motion);
+                return self.PreprocessWithIndices(points, timestamps, motion);
+            },
             "points"_a, "timestamps"_a, "relative_motion"_a);
 
     // Point Cloud registration

@@ -25,6 +25,7 @@
 #include <Eigen/Core>
 #include <functional>
 #include <sophus/se3.hpp>
+#include <tuple>
 #include <vector>
 
 namespace kiss_icp {
@@ -38,6 +39,10 @@ struct Preprocessor {
     std::vector<Eigen::Vector3d> Preprocess(const std::vector<Eigen::Vector3d> &frame,
                                             const std::vector<double> &timestamps,
                                             const Sophus::SE3d &relative_motion) const;
+    std::tuple<std::vector<Eigen::Vector3d>, std::vector<size_t>> PreprocessWithIndices(
+        const std::vector<Eigen::Vector3d> &frame,
+        const std::vector<double> &timestamps,
+        const Sophus::SE3d &relative_motion) const;
     double max_range_;
     double min_range_;
     bool deskew_;

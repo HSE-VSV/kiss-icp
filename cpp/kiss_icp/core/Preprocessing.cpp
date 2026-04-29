@@ -55,7 +55,14 @@ Preprocessor::Preprocessor(const double max_range,
 std::vector<Eigen::Vector3d> Preprocessor::Preprocess(const std::vector<Eigen::Vector3d> &frame,
                                                       const std::vector<double> &timestamps,
                                                       const Sophus::SE3d &relative_motion) const {
-    const std::vector<Eigen::Vector3d> &deskewed_frame = [&]() {
+    return std::get<0>(PreprocessWithIndices(frame, timestamps, relative_motion));
+}
+
+std::tuple<std::vector<Eigen::Vector3d>, std::vector<size_t>> Preprocessor::PreprocessWithIndices(
+    const std::vector<Eigen::Vector3d> &frame,
+    const std::vector<double> &timestamps,
+    const Sophus::SE3d &relative_motion) const {
+    const std::vector<Eigen::Vector3d> deskewed_frame = [&]() {
         if (!deskew_ || timestamps.empty()) {
             return frame;
         } else {
@@ -83,14 +90,19 @@ std::vector<Eigen::Vector3d> Preprocessor::Preprocess(const std::vector<Eigen::V
         }
     }();
     std::vector<Eigen::Vector3d> preprocessed_frame;
+    std::vector<size_t> kept_indices;
     preprocessed_frame.reserve(deskewed_frame.size());
-    std::for_each(deskewed_frame.cbegin(), deskewed_frame.cend(), [&](const auto &point) {
+    kept_indices.reserve(deskewed_frame.size());
+    for (size_t idx = 0; idx < deskewed_frame.size(); ++idx) {
+        const auto &point = deskewed_frame.at(idx);
         const double point_range = point.norm();
         if (point_range < max_range_ && point_range > min_range_) {
             preprocessed_frame.emplace_back(point);
+            kept_indices.emplace_back(idx);
         }
-    });
+    }
     preprocessed_frame.shrink_to_fit();
-    return preprocessed_frame;
+    kept_indices.shrink_to_fit();
+    return std::make_tuple(preprocessed_frame, kept_indices);
 }
 }  // namespace kiss_icp

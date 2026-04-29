@@ -32,7 +32,7 @@ All rights reserved to the original authors: Tim Field and Florian Vahl.
 """
 
 import sys
-from typing import Iterable, List, Optional, Tuple, Union
+from typing import Iterable, List, Optional, Tuple
 
 import numpy as np
 
@@ -52,15 +52,20 @@ _DATATYPES = {
 DUMMY_FIELD_PREFIX = "unnamed_field"
 
 
-def read_point_cloud(msg) -> Tuple[np.ndarray, Union[np.ndarray, None]]:
+def read_point_cloud(msg) -> Tuple[np.ndarray, ...]:
     """
-    Extract poitns and timestamps from a PointCloud2 message.
+    Extract points, timestamps, and optional intensities from a PointCloud2 message.
 
-    :return: Tuple of [points, timestamps]
+    :return: Tuple of [points, timestamps] or [points, timestamps, intensities]
         points: array of x, y z points, shape: (N, 3)
         timestamps: array of per-pixel timestamps, shape: (N,)
+        intensities: array of per-point intensities, shape: (N,)
     """
     field_names = ["x", "y", "z"]
+    has_intensity = any(field.name == "intensity" for field in msg.fields)
+    if has_intensity:
+        field_names.append("intensity")
+
     t_field = None
     for field in msg.fields:
         if field.name in ["t", "timestamp", "time"]:
@@ -74,12 +79,17 @@ def read_point_cloud(msg) -> Tuple[np.ndarray, Union[np.ndarray, None]]:
     )
 
     # Remove nan if any
-    points = points[~np.any(np.isnan(points), axis=1)]
+    valid_points = ~np.any(np.isnan(points), axis=1)
+    points = points[valid_points]
 
     if t_field:
-        timestamps = points_structured[t_field].astype(np.float64)
+        timestamps = points_structured[t_field][valid_points].astype(np.float64)
     else:
         timestamps = np.array([])
+
+    if has_intensity:
+        intensities = points_structured["intensity"][valid_points]
+        return points.astype(np.float64), timestamps, intensities
     return points.astype(np.float64), timestamps
 
 

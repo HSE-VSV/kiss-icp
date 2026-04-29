@@ -96,7 +96,7 @@ class OdometryPipeline:
     # Private interface  ------
     def _run_pipeline(self):
         for idx in get_progress_bar(self._first, self._last):
-            raw_frame, timestamps = self._dataset[idx]
+            raw_frame, timestamps, _ = self._unpack_scan(self._dataset[idx])
             start_time = time.perf_counter_ns()
             source, keypoints = self.odometry.register_frame(raw_frame, timestamps)
             self.poses[idx - self._first] = self.odometry.last_pose
@@ -111,6 +111,16 @@ class OdometryPipeline:
                 self.odometry.last_pose,
                 self._vis_infos,
             )
+
+    @staticmethod
+    def _unpack_scan(dataframe):
+        if len(dataframe) == 2:
+            frame, timestamps = dataframe
+            return frame, timestamps, None
+        if len(dataframe) == 3:
+            frame, timestamps, intensities = dataframe
+            return frame, timestamps, intensities
+        raise ValueError(f"Unsupported dataset scan format with {len(dataframe)} items")
 
     @staticmethod
     def save_poses_kitti_format(filename: str, poses: np.ndarray):

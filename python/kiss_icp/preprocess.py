@@ -49,3 +49,13 @@ class Preprocessor:
                 relative_motion,
             )
         )
+
+    def preprocess_with_indices(
+        self, frame: np.ndarray, timestamps: np.ndarray, relative_motion: np.ndarray
+    ):
+        preprocessed_frame, kept_indices = self._preprocessor._preprocess_with_indices(
+            kiss_icp_pybind._Vector3dVector(frame),
+            timestamps.ravel(),
+            relative_motion,
+        )
+        return np.asarray(preprocessed_frame), np.asarray(kept_indices, dtype=np.int64)
